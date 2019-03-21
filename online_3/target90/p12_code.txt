@@ -1,0 +1,10 @@
+
+p12_code.o:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000000000 <.text>:
+   0:	48 c7 c7 37 49 7a 4b 	mov    $0x4b7a4937,%rdi
+   7:	68 30 18 40 00       	pushq  $0x401830
+   c:	c3                   	retq   
