@@ -1,0 +1,147 @@
+#/* $begin ncopy-ys */
+##################################################################
+# ncopy.ys - Copy a src block of len words to dst.
+# Return the number of positive words (>0) contained in src.
+#
+# Include your name and ID here.
+# Student ID : 517030910183
+# Name : Hou Zhengtong
+# Describe how and why you modified the baseline code.
+# 1: change jxx stuctures to avoid load/use hazzard.
+# 2: loop unrolling and by testing with 2,4,5,6,7,8 ,I find that 7 is the best option.
+# 3: Use iaddq instruction,and this instuction will decrease load num into register
+# 4: When finish loop,I unfold all the loops to finish the unfinished loops because loop will add load/use hazzard.
+# 5: in the loop function,store the previous and load the behind.In this way, we can reduce the CPE using less independent load instruction.
+##################################################################
+# Do not modify this portion
+# Function prologue.
+# %rdi = src, %rsi = dst, %rdx = len
+ncopy:
+
+##################################################################
+# You can modify this portion
+	# Loop header
+	xorq %rax,%rax		# count = 0;
+	iaddq $-7,%rdx
+	jmp Whether
+L7:	
+	mrmovq (%rdi), %r10	
+	iaddq $56, %rdi		
+	rmmovq %r10, (%rsi)	
+	iaddq $56, %rsi
+	andq %r10, %r10	
+	mrmovq -48(%rdi), %r10	
+	jle L6		
+	iaddq $1, %rax
+L6:		
+	rmmovq %r10, -48(%rsi)
+	andq %r10, %r10
+	mrmovq -40(%rdi), %r10	
+	jle L5		
+	iaddq $1, %rax		
+L5:		
+	rmmovq %r10, -40(%rsi)	
+	andq %r10, %r10	
+	mrmovq -32(%rdi), %r10
+	jle L4		
+	iaddq $1, %rax		
+L4:		
+	rmmovq %r10, -32(%rsi)	
+	andq %r10, %r10	
+	mrmovq -24(%rdi), %r10
+	jle L3		
+	iaddq $1, %rax		
+L3:		
+	rmmovq %r10, -24(%rsi)	
+	andq %r10, %r10
+	mrmovq -16(%rdi), %r10		
+	jle L2		
+	iaddq $1, %rax		
+L2:		
+	rmmovq %r10, -16(%rsi)	
+	andq %r10, %r10
+	mrmovq -8(%rdi), %r10		
+	jle L1		
+	iaddq $1, %rax		
+L1:		
+	rmmovq %r10, -8(%rsi)	
+	andq %r10, %r10
+	jle L0		
+	iaddq $1, %rax
+L0:
+	iaddq $-7, %rdx	
+Whether:
+	jge L7
+P0:
+	iaddq $7,%rdx
+	jg P1
+	ret
+P1:
+	mrmovq (%rdi), %r10
+	mrmovq 8(%rdi), %r11
+	rmmovq %r10, (%rsi)
+	andq %r10, %r10
+	jle P01
+	iaddq $1, %rax
+P01:	
+	iaddq $-1, %rdx	
+	jg P2
+	ret
+P2:
+	mrmovq 16(%rdi), %r10
+	rmmovq %r11, 8(%rsi)
+	andq %r11, %r11
+	jle P02
+	iaddq $1, %rax
+P02:
+	iaddq $-1, %rdx
+	jg P3
+	ret
+P3:
+	mrmovq 24(%rdi), %r11
+	rmmovq %r10, 16(%rsi)
+	andq %r10, %r10
+	jle P03
+	iaddq $1, %rax
+P03:
+	iaddq $-1, %rdx
+	jg P4
+	ret
+P4:
+	mrmovq 32(%rdi), %r10
+	rmmovq %r11, 24(%rsi)
+	andq %r11, %r11
+	jle P04
+	iaddq $1, %rax
+P04:
+	iaddq $-1, %rdx
+	jg P5
+	ret
+P5:
+	mrmovq 40(%rdi), %r11
+	rmmovq %r10, 32(%rsi)
+	andq %r10, %r10
+	jle P05
+	iaddq $1, %rax
+P05:
+	iaddq $-1, %rdx
+	jg P6
+	ret
+P6:
+	rmmovq %r11, 40(%rsi)
+	andq %r11, %r11
+	jle P06
+	iaddq $1, %rax
+P06:
+	iaddq $-1, %rdx
+	ret
+##################################################################
+# Do not modify the following section of code
+# Function epilogue.
+
+Done:
+	ret
+##################################################################
+# Keep the following label at the end of your function
+End:
+#/* $end ncopy-ys */
