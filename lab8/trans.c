@@ -22,6 +22,83 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
+    int i,j,tmp,index;
+    int r,c;
+    if(M==32)
+    {   //separate the 32X32 block into 8X8
+        for(r = 0;r < N ;r+=8){
+            for(c =0 ;c < M; c+=8){
+                for(i=r ; i<r+8;i++){
+                    for(j=c;j<c+8;j++){
+                        if(i!=j){
+                            B[j][i] = A[i][j];
+                        }else{
+                            tmp = A[i][j];                 
+                            index = i;
+                        }
+                    }
+                    if(c == r){             
+                        B[index][index] = tmp;
+                    }
+                }
+            }
+        }
+    }
+    else if(M==64)
+    {
+        //separate the the 64x64 block into 8X8 , and divide to 4 smaller blocks
+        for(r = 0; r < N;r += 8){
+            for(c = 0;c < M; c += 8){
+                for(i = r; i < r + 4; i++){
+                    for(j = c; j < c + 4; j++){
+                        B[j][i] = A[i][j];
+                    }
+                    for(j = c + 4;j < c + 8; j++){
+                        B[2*c + 7 - j][i + 4] = A[i][j];
+                    }
+                }
+                for(int k = 0; k < 4; k++){
+                    for(j = 0;j < 4;j++){
+                        B[c + 4 + k][r + j] = B[c + 3 - k][r + 4 + j];
+                    }
+                    /*int tmp1 = B[c+3-k][r+4];
+                    int tmp2 = B[c+3-k][r+5];
+                    int tmp3 = B[c+3-k][r+6];
+                    int tmp4 = B[c+3-k][r+7];
+                    B[c + 4 + k][r] = tmp1;
+                    B[c + 4 + k][r + 1] = tmp2;
+                    B[c + 4 + k][r + 2] = tmp3;
+                    B[c + 4 + k][r + 3] = tmp4;*/
+                    for(j = 4;j < 8; j++){
+                        B[c + 4 + k][r + j] = A[r + j][c + 4 + k];
+                    }
+                    for(j = 4;j < 8; j++){
+                        B[c + 3 - k][r + j] = A[r + j][c + 3 - k];
+                    }               
+                }
+            }
+        }
+    }else{
+        //separate the the 61X67 block into 16X16
+        for(r = 0;r < N ;r += 16){
+            for(c = 0;c < M; c += 16){
+                for(i = r; i < r + 16 && (i < N); i++){
+                    for(j = c;j < c + 16 &&(j < M);j++){
+                        if(i != j){
+                            B[j][i] = A[i][j];
+                        }else{
+                            tmp = A[i][j];                 
+                            index = i;
+                        }
+                    }
+                    if(c == r){             
+                        B[index][index] = tmp;
+                    }
+                }
+            }
+        }
+
+    }
 }
 
 /* 
