@@ -177,15 +177,14 @@ void eval(char *cmdline)
     if(argv[0] == NULL)
         return;  /* ignore empty lines */ /* from the text book */
 
-    sigset_t mask;
-
     if(!builtin_cmd(argv)){
+        sigset_t mask;
         sigemptyset(&mask);
         sigaddset(&mask, SIGCHLD);
         sigprocmask(SIG_BLOCK, &mask, NULL); /* block SIGCHLD as lab9.pdf */
         if((pid = fork()) == 0){ /* Child runs user job */
             sigprocmask(SIG_UNBLOCK, &mask, NULL);
-            setpgid(0,0);
+            setpgid(0,0); /* refer to lab9.pdf */
             if(execve(argv[0], argv,environ) < 0){
                 printf("%s: Command not found\n", argv[0]);
                 exit(0);
@@ -361,16 +360,16 @@ void sigchld_handler(int sig)
     pid_t pid;
     int status;
     while((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0){
-        if(WIFSTOPPED(status)){ /* stopped by a signal */
+        if(WIFSTOPPED(status)){ /* stopped by signalstp */
             printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(pid), pid, WSTOPSIG(status));
             struct job_t *job = getjobpid(jobs, pid);
             if(job != NULL) job->state = ST;
         }
-        else if(WIFSIGNALED(status)){/* terminated by signal */
+        else if(WIFSIGNALED(status)){/* terminated by signalint */
             printf("Job [%d] (%d) terminated by signal %d\n", pid2jid(pid), pid, WTERMSIG(status));
             deletejob(jobs, pid);
         }
-        else{
+        else{ /* natual exit */
             deletejob(jobs, pid);
         }
     }
@@ -387,7 +386,7 @@ void sigint_handler(int sig)
     pid_t pid;
     if((pid = fgpid(jobs)) != 0){
         kill(pid *(-1), sig);
-        //deletejob(jobs, pid);
+        //deletejob(jobs, pid);/* must put in sigchld_handler maybe pid group(if not trace15 fails) */
     }
     return;
 }
@@ -401,10 +400,9 @@ void sigtstp_handler(int sig)
 {
     pid_t pid;
     if((pid = fgpid(jobs)) != 0){
-        struct job_t* job = getjobpid(jobs, pid);
-        if(job->state == ST) return;
         kill(pid *(-1), sig);
-        //job->state = ST;
+        //struct job_t *job = getjobpid(jobs, pid);
+        //if(job != NULL) job->state = ST; /* must put in sigchld_handler maybe pid group(if not trace15 fails) */
     }
     return;
 }
